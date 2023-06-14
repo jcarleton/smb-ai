@@ -6,6 +6,7 @@
 import gym_super_mario_bros
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from nes_py.wrappers import JoypadSpace
+from gym.wrappers import GrayScaleObservation
 from stable_baselines3.common.vec_env import VecFrameStack, DummyVecEnv
 from stable_baselines3 import PPO
 
