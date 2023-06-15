@@ -1,6 +1,7 @@
 # Jesse Carleton CM3070
 # initial prototype
-# this file will only populate a SMB game UI with Mario
+# this file will allow for extremely basic model training for SMB
+# not adivsed to be used for actual training
 
 
 import gym_super_mario_bros
@@ -15,9 +16,16 @@ from stable_baselines3 import PPO
 smb_env = gym_super_mario_bros.make('SuperMarioBros-v0')
 # set up the action space
 smb_env = JoypadSpace(smb_env, SIMPLE_MOVEMENT)
+# make it grayscale
 smb_env = GrayScaleObservation(smb_env, keep_dim=True)
+# create vectorized wrapper
 smb_env = DummyVecEnv([lambda: smb_env])
+# create a stack of N frames
 smb_env = VecFrameStack(smb_env, 4, channels_order='last')
 
+
+# create model using a given policy
+# options are CNNPolicy, MlpPolicy - convoluted nn, multi-layered perceptron
 model = PPO('CnnPolicy', smb_env, verbose=1, learning_rate=0.00001, n_steps=512)
+# get learning!
 model.learn(total_timesteps=100000)
