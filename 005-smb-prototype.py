@@ -57,13 +57,6 @@ class CustomReward(gym.Wrapper):
                 reward -= 50.0
         return state, reward / 10.0, done, info
 
-wandb_run = wandb.init(
-    project="smb-ai",
-    config=config,
-    sync_tensorboard=True,
-    monitor_gym=True,
-    save_code=True
-)
 
 # set up the environment
 env = gym_super_mario_bros.make('SuperMarioBros-v0')
