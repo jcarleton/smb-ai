@@ -68,7 +68,7 @@ class trainingCallback(BaseCallback):
             os.makedirs(self.filepath, exist_ok=True)
     def _on_step(self) -> bool:
         if self.n_calls % self.interval == 0:
-            model_path = os.path.join(self.filepath, 'best_model_{}'.format(self.n_calls))
+            model_path = os.path.join(self.filepath, 'model_checkpoint_{}'.format(self.n_calls))
             self.model.save(model_path)
         return True
 
@@ -94,9 +94,9 @@ model.learn(
             model_save_path=f"models/{wandb_run.id}",
             verbose=2,
             ),
-            trainingCallback(interval=100000, filepath=f"models/{wandb_run.id}")],)
+            trainingCallback(interval=config["total_timesteps"]/10, filepath=f"models/{wandb_run.id}")],)
 
-
+# save the final model
 PPO_path = os.path.join('Training', 'Saved Models', 'PPO_SuperMario_2M')
 model.save(PPO_path)
 
