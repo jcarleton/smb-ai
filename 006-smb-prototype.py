@@ -16,14 +16,17 @@ from gym.wrappers import GrayScaleObservation
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder, VecFrameStack, VecMonitor, VecNormalize
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CallbackList
-from smbprototypecustompolicy import CustomNetwork, CustomActorCriticPolicy
+# old custom nn import
+# from smbprototypecustompolicy import CustomNetwork, CustomActorCriticPolicy
+# current custom nn import
+from smbcustomnn001 import CustomNetwork, CustomActorCriticPolicy
 from stable_baselines3.common.evaluation import evaluate_policy
 from wandb.integration.sb3 import WandbCallback
 
 # define custom neural net, timesteps, environment name
 config = {
         "policy_type": CustomActorCriticPolicy,
-        "total_timesteps": 2000000,
+        "total_timesteps": 12000000,
         "env_name": 'SuperMarioBros-v0',
 }
 
@@ -33,7 +36,8 @@ wandb_run = wandb.init(
     config=config,
     sync_tensorboard=True,
     monitor_gym=True,
-    save_code=True
+    save_code=True,
+    settings=wandb.Settings(code_dir=".")
 )
 
 
@@ -54,6 +58,12 @@ class CustomReward(gym.RewardWrapper):
         if done:
             if info['flag_get']:
                 reward += 350.0
+            elif info['coins'] > 0:
+                reward += info['coins'] * 100.0
+            elif info['status'] == 'tall':
+                reward += 100.0
+            elif info['status'] == 'fireball':
+                reward += 200.0
             else:
                 reward -= 50.0
         return state, reward / 10.0, done, info
@@ -70,6 +80,7 @@ class trainingCallback(BaseCallback):
         if self.n_calls % self.interval == 0:
             model_path = os.path.join(self.filepath, 'model_checkpoint_{}'.format(self.n_calls))
             self.model.save(model_path)
+            wandb.save(model_path)
         return True
 
 # set up the environment
@@ -78,7 +89,7 @@ env = JoypadSpace(env, SIMPLE_MOVEMENT)
 env = GrayScaleObservation(env, keep_dim=True)
 env = DummyVecEnv([lambda: env])
 env = VecFrameStack(env, 4, channels_order='last')
-env = VecNormalize(env, norm_obs=True, norm_reward=True)
+env = VecNormalize(env, norm_obs=True, norm_reward=False)
 env = VecMonitor(env)
 
 # record video on interval

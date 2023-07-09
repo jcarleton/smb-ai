@@ -30,12 +30,10 @@ smb_env = DummyVecEnv([lambda: smb_env])
 smb_env = VecFrameStack(smb_env, 4, channels_order='last')
 
 
-model = PPO.load('./train/best_model_1000')
-
+model = PPO.load('./train/model_checkpoint_100000')
 
 state = smb_env.reset()
 while True:
-
     action, _ = model.predict(state)
     state, reward, done, info = smb_env.step(action)
     smb_env.render()

@@ -2,7 +2,7 @@
 # initial prototype
 # this file will allow for extremely basic model training for SMB
 # can be used for building a custom network and modifying its parameters
-# includes custom reward functionality via a Gym wrapper
+# includes custom reward functionality via a Gym wrapper, now in use
 # now using WandB for logging instrumentation and video snapshots
 
 
@@ -10,20 +10,20 @@ import os
 import gym_super_mario_bros
 import gym
 import wandb
-from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
+from gym_super_mario_bros.actions import SIMPLE_MOVEMENT, COMPLEX_MOVEMENT
 from nes_py.wrappers import JoypadSpace
 from gym.wrappers import GrayScaleObservation
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder, VecFrameStack, VecMonitor, VecNormalize
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CallbackList
-from smbprototypecustompolicy import CustomNetwork, CustomActorCriticPolicy
+from smbcustomnn001 import CustomNetwork, CustomActorCriticPolicy
 from stable_baselines3.common.evaluation import evaluate_policy
 from wandb.integration.sb3 import WandbCallback
 
 # define custom neural net, timesteps, environment name
 config = {
         "policy_type": CustomActorCriticPolicy,
-        "total_timesteps": 2000000,
+        "total_timesteps": 1000000,
         "env_name": 'SuperMarioBros-v0',
 }
 
@@ -33,7 +33,8 @@ wandb_run = wandb.init(
     config=config,
     sync_tensorboard=True,
     monitor_gym=True,
-    save_code=True
+    save_code=True,
+    settings=wandb.Settings(code_dir=".")
 )
 
 
@@ -53,7 +54,19 @@ class CustomReward(gym.RewardWrapper):
         self._current_score = info['score']
         if done:
             if info['flag_get']:
-                reward += 350.0
+                reward += 1000.0
+            elif info['coins'] > 0:
+                reward += info['coins'] * 100.0
+            elif info['score'] > 0:
+                reward += info['score'] * 1.0
+            elif info['status'] == 'tall':
+                reward += 100.0
+            elif info['status'] == 'fireball':
+                reward += 200.0
+            elif info['x_pos'] > 0:
+                reward += info['x_pos'] * 5.0
+            elif info['time'] > 0:
+                reward -= (400 - info['time']) % 3
             else:
                 reward -= 50.0
         return state, reward / 10.0, done, info
@@ -70,15 +83,18 @@ class trainingCallback(BaseCallback):
         if self.n_calls % self.interval == 0:
             model_path = os.path.join(self.filepath, 'model_checkpoint_{}'.format(self.n_calls))
             self.model.save(model_path)
+            wandb.save(model_path)
         return True
 
 # set up the environment
 env = gym_super_mario_bros.make('SuperMarioBros-v0')
-env = JoypadSpace(env, SIMPLE_MOVEMENT)
+env = CustomReward(env)
+env = JoypadSpace(env, COMPLEX_MOVEMENT)
 env = GrayScaleObservation(env, keep_dim=True)
 env = DummyVecEnv([lambda: env])
 env = VecFrameStack(env, 4, channels_order='last')
-env = VecNormalize(env, norm_obs=True, norm_reward=True)
+# normalize observation or reward, uses moving average
+# env = VecNormalize(env, norm_obs=True, norm_reward=False)
 env = VecMonitor(env)
 
 # record video on interval
@@ -97,7 +113,7 @@ model.learn(
             trainingCallback(interval=config["total_timesteps"]/10, filepath=f"models/{wandb_run.id}")],)
 
 # save the final model
-PPO_path = os.path.join('Training', 'Saved Models', 'PPO_SuperMario_2M')
+PPO_path = os.path.join('Training', 'Saved Models', f"PPO_SuperMario_1M/{wandb_run.id}")
 model.save(PPO_path)
 
 # evaluate the model

@@ -20,12 +20,17 @@ class CustomNetwork(nn.Module):
 
         # Policy network
         self.policy_net = nn.Sequential(
-            nn.Linear(feature_dim, last_layer_dim_pi), nn.ReLU()
+            # nn.Linear(feature_dim, last_layer_dim_pi), nn.ReLU()
+            nn.Linear(feature_dim, last_layer_dim_pi),
+            nn.CELU(alpha=1.0)
         )
         # Value network
         self.value_net = nn.Sequential(
-            nn.Linear(feature_dim, last_layer_dim_vf), nn.ReLU()
+            # nn.Linear(feature_dim, last_layer_dim_vf), nn.ReLU()
+            nn.Linear(feature_dim, last_layer_dim_vf),
+            nn.CELU(alpha=1.0)
         )
+
 
     def forward(self, features: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -39,7 +44,6 @@ class CustomNetwork(nn.Module):
 
     def forward_critic(self, features: torch.Tensor) -> torch.Tensor:
         return self.value_net(features)
-
 
 class CustomActorCriticPolicy(ActorCriticPolicy):
     def __init__(
