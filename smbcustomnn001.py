@@ -18,17 +18,20 @@ class CustomNetwork(nn.Module):
         self.latent_dim_pi = last_layer_dim_pi
         self.latent_dim_vf = last_layer_dim_vf
 
+        # Using SELU to prevent dead neurons
         # Policy network
         self.policy_net = nn.Sequential(
             # nn.Linear(feature_dim, last_layer_dim_pi), nn.ReLU()
             nn.Linear(feature_dim, last_layer_dim_pi),
-            nn.CELU(alpha=1.0)
+            nn.SELU()
+            # nn.CELU(alpha=1.0)
         )
         # Value network
         self.value_net = nn.Sequential(
             # nn.Linear(feature_dim, last_layer_dim_vf), nn.ReLU()
             nn.Linear(feature_dim, last_layer_dim_vf),
-            nn.CELU(alpha=1.0)
+            nn.SELU()
+            # nn.CELU(alpha=1.0)
         )
 
 
