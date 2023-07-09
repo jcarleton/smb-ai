@@ -50,7 +50,6 @@ class CustomReward(gym.RewardWrapper):
 
     def step(self, action):
         state, reward, done, info = self.env.step(action)
-        reward += (info['score'] - self._current_score) / 40.0
         self._current_score = info['score']
         if done:
             if info['flag_get']:
@@ -69,7 +68,7 @@ class CustomReward(gym.RewardWrapper):
                 reward -= (400 - info['time']) % 3
             else:
                 reward -= 50.0
-        return state, reward / 10.0, done, info
+        return state, reward, done, info
 
 class trainingCallback(BaseCallback):
     def __init__(self, interval, filepath, verbosity=1):
