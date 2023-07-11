@@ -112,6 +112,6 @@ PPO_path = os.path.join('Training', 'Saved Models', 'PPO_SuperMario_2M')
 model.save(PPO_path)
 
 # evaluate the model
-evaluate_policy(model, env, n_eval_episodes=10, render=True)
+evaluate_policy(model, env, n_eval_episodes=10, render=False)
 # terminate the WandB session
 wandb_run.finish()
