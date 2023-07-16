@@ -10,9 +10,10 @@ import os
 import gym_super_mario_bros
 import gym
 import wandb
+import cv2
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT, COMPLEX_MOVEMENT
 from nes_py.wrappers import JoypadSpace
-from gym.wrappers import GrayScaleObservation
+from gym.wrappers import GrayScaleObservation, FrameStack
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder, VecFrameStack, VecMonitor, VecNormalize
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CallbackList
@@ -53,7 +54,7 @@ class CustomReward(gym.RewardWrapper):
             elif info['status'] == 'fireball':
                 reward += 200.0
             elif info['x_pos'] > 0:
-                reward += info['x_pos'] * 5.0
+                reward += info['x_pos']
             elif info['time'] > 0:
                 reward -= (400 - info['time']) % 3
             else:
@@ -75,6 +76,25 @@ class trainingCallback(BaseCallback):
             wandb.save(model_path)
         return True
 
+
+class ResizeObservation(gym.ObservationWrapper):
+    """Downsample the image observation to a square image. """
+    def __init__(self, env, shape):
+        super().__init__(env)
+        if isinstance(shape, int):
+            self.shape = (shape, shape)
+        else:
+            self.shape = tuple(shape)
+
+        obs_shape = self.shape + self.observation_space.shape[2:]
+        self.observation_space = Box(low=0, high=255, shape=obs_shape, dtype=np.uint8)
+
+    def observation(self, observation):
+        observation = cv2.resize(observation, self.shape, interpolation=cv2.INTER_AREA)
+        return observation
+
+bestModelCallback = EvalCallback(callback_on_new_best=saveModelNow())
+
 # set up the environment
 env = gym_super_mario_bros.make('SuperMarioBros-v0')
 env = CustomReward(env)
@@ -88,11 +108,11 @@ env = VecMonitor(env)
 
 
 steps = [512, 1024, 2048]
-epochs = [5, 10, 15, 20]
+# epochs = [5, 10, 15, 20]
 lr = [0.00001, 0.0001, 0.001, 0.01, 0.1]
+ent = [0.00001, 0.0001, 0.001, 0.01]
 
-
-for epoch in epochs:
+for entco in ent:
     for lrate in lr:
         for step in steps:
 
@@ -110,7 +130,7 @@ for epoch in epochs:
             env = VecVideoRecorder(env, f"videos/{wandb_run.id}", record_video_trigger=lambda x: x % 50000 == 0, video_length=2000)
 
             # define model and parameters
-            model = PPO(config["policy_type"], env, verbose=1, tensorboard_log=f"runs/{wandb_run.id}", learning_rate=lrate, n_epochs=epoch, n_steps=step)
+            model = PPO(config["policy_type"], env, verbose=1, tensorboard_log=f"runs/{wandb_run.id}", ent_coef=entco, learning_rate=lrate, n_epochs=epoch, n_steps=step)
 
             # learn the game!
             model.learn(
