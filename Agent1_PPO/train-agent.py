@@ -16,10 +16,11 @@ from gym.wrappers import GrayScaleObservation
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder, VecFrameStack, VecMonitor, VecNormalize
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CallbackList
-from stable_baselines3.common.atari_wrappers import WarpFrame, MaxAndSkipEnv, EpisodicLifeEnv
+from stable_baselines3.common.atari_wrappers import WarpFrame, MaxAndSkipEnv
 from smbcustomnn001 import CustomNetwork, CustomActorCriticPolicy
 from stable_baselines3.common.evaluation import evaluate_policy
 from wandb.integration.sb3 import WandbCallback
+from wrappers import EpisodicLifeEnv, CustomReward
 
 
 # define custom neural net, timesteps, environment name
@@ -48,45 +49,6 @@ artifact.add_file('./smbcustomnn001.py', name='smbcustomnn001.py')
 checkpoint_dir = './training/'
 # define logging dir
 logging_dir = './log/'
-
-
-# custom reward function
-class CustomReward(gym.RewardWrapper):
-    def __init__(self, env):
-        super(CustomReward, self).__init__(env)
-        self._current_score = 0
-
-    def step(self, action):
-        state, reward, done, info = self.env.step(action)
-        self._current_score = info['score']
-        if done:
-            # reward if...
-            # reach the flag
-            if info['flag_get']:
-                reward += 1000.0
-            # get coins
-            elif info['coins'] > 0:
-                reward += info['coins'] * 100.0
-            # increase score
-            elif info['score'] > 0:
-                reward += info['score'] * 1.0
-            # get mushroom
-            elif info['status'] == 'tall':
-                reward += 100.0
-            # get fire flower
-            elif info['status'] == 'fireball':
-                reward += 200.0
-            # move further right on screen
-            elif info['x_pos'] > 0:
-                reward += info['x_pos']
-            # penalties
-            # time progression
-            elif info['time'] > 0:
-                reward -= (400 - info['time']) % 3
-            # penalize inaction
-            else:
-                reward -= 50.0
-        return state, reward, done, info
 
 
 # training callback to save model checkpoints
@@ -121,6 +83,8 @@ class trainingCallback(BaseCallback):
 env = gym_super_mario_bros.make('SuperMarioBros-v0')
 # custom rewards
 env = CustomReward(env)
+# makes end-of-life the end-of-episode, but only reset on true game over.
+env = EpisodicLifeEnv(env)
 # set up the action space
 env = JoypadSpace(env, SIMPLE_MOVEMENT)
 # skip frames, return the max of last 2 frames
