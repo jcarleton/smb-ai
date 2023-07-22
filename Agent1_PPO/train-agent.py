@@ -150,7 +150,11 @@ model = PPO(config["policy_type"],
             tensorboard_log=f"runs/{wandb_run.id}",
             learning_rate=0.00001,
             n_epochs=20,
-            n_steps=512
+            n_steps=256,
+            batch_size=256,
+            vf_coef=0.5,
+            ent_coef=0.01,
+            max_grad_norm=0.5
             )
 
 

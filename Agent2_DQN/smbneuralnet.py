@@ -26,8 +26,8 @@ class CustomCNN(BaseFeaturesExtractor):
             nn.SELU(),
             nn.Flatten(),
             # nn.Linear(3136, 512),
-            # nn.ReLU(),
-            # nn.Linear(512, features_dim), ## no idea on dimensions...
+            # nn.SELU(),
+            # nn.Linear(512, features_dim)
         )
 
         # Compute shape by doing one forward pass

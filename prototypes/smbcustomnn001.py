@@ -28,8 +28,10 @@ class CustomNetwork(nn.Module):
             nn.Linear(last_layer_dim_pi, last_layer_dim_pi),
             nn.SELU(),
             nn.Linear(last_layer_dim_pi, last_layer_dim_pi),
+            nn.SELU(),
+            nn.Flatten(), #new
+            nn.Linear(last_layer_dim_pi, last_layer_dim_pi),
             nn.SELU()
-            # nn.CELU(alpha=1.0)
         )
         # Value network
         self.value_net = nn.Sequential(
@@ -38,6 +40,9 @@ class CustomNetwork(nn.Module):
             nn.SELU(),
             nn.Linear(last_layer_dim_vf, last_layer_dim_vf),
             nn.SELU(),
+            nn.Linear(last_layer_dim_vf, last_layer_dim_vf),
+            nn.SELU(),
+            nn.Flatten(), #new
             nn.Linear(last_layer_dim_vf, last_layer_dim_vf),
             nn.SELU()
             # nn.CELU(alpha=1.0)

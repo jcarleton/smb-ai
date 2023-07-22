@@ -12,9 +12,9 @@ import gym
 import wandb
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from nes_py.wrappers import JoypadSpace
-from gym.wrappers import GrayScaleObservation
+from gym.wrappers import GrayScaleObservation, Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder, VecFrameStack, VecMonitor, VecNormalize
-from stable_baselines3.common.atari_wrappers import WarpFrame, MaxAndSkipEnv, EpisodicLifeEnv
+from stable_baselines3.common.atari_wrappers import WarpFrame, MaxAndSkipEnv
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CallbackList
 from stable_baselines3.dqn.policies import CnnPolicy, MlpPolicy, DQNPolicy

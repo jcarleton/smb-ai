@@ -12,13 +12,15 @@ import gym
 import wandb
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT, COMPLEX_MOVEMENT
 from nes_py.wrappers import JoypadSpace
-from gym.wrappers import GrayScaleObservation
+from gym.wrappers import GrayScaleObservation, ResizeObservation
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder, VecFrameStack, VecMonitor, VecNormalize
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CallbackList
+from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv, ClipRewardEnv, NoopResetEnv
 from smbcustomnn001 import CustomNetwork, CustomActorCriticPolicy
 from stable_baselines3.common.evaluation import evaluate_policy
 from wandb.integration.sb3 import WandbCallback
+
 
 # define custom neural net, timesteps, environment name
 config = {
@@ -26,6 +28,7 @@ config = {
         "total_timesteps": 1000000,
         "env_name": 'SuperMarioBros-v0',
 }
+
 
 # initialize wandb with project name, config, and requirements for metrics
 wandb_run = wandb.init(
@@ -42,6 +45,26 @@ wandb_run = wandb.init(
 checkpoint_dir = './training/'
 # define logging dir
 logging_dir = './log/'
+
+
+CUSTOM_ACTIONS = [
+    ['NOOP'],
+    ['right'],
+    ['right', 'A'],
+    ['right', 'B'],
+    ['right', 'B', 'A'],
+    ['B', 'right', 'A'],
+    ['A'],
+    ['left'],
+    ['left', 'A'],
+    ['left', 'B'],
+    ['left', 'A', 'B'],
+    ['B', 'left', 'A'],
+    ['down'],
+    ['up'],
+    ['A', 'up'],
+]
+
 
 class CustomReward(gym.RewardWrapper):
     def __init__(self, env):
@@ -88,18 +111,36 @@ class trainingCallback(BaseCallback):
 # set up the environment
 env = gym_super_mario_bros.make('SuperMarioBros-v0')
 env = CustomReward(env)
-env = JoypadSpace(env, COMPLEX_MOVEMENT)
+# env = JoypadSpace(env, SIMPLE_MOVEMENT)
+env = JoypadSpace(env, CUSTOM_ACTIONS)
+env = NoopResetEnv(env, noop_max=30)
 env = GrayScaleObservation(env, keep_dim=True)
+env = ResizeObservation(env, (84, 84))
+env = MaxAndSkipEnv(env, skip=4)
+env = ClipRewardEnv(env)
 env = DummyVecEnv([lambda: env])
 env = VecFrameStack(env, 4, channels_order='last')
 # normalize observation or reward, uses moving average
-# env = VecNormalize(env, norm_obs=True, norm_reward=False)
+env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.0)
 env = VecMonitor(env)
 
 # record video on interval
 env = VecVideoRecorder(env, f"videos/{wandb_run.id}", record_video_trigger=lambda x: x % 50000 == 0, video_length=2000)
+
 # define model and parameters
-model = PPO(config["policy_type"], env, verbose=1, tensorboard_log=f"runs/{wandb_run.id}", learning_rate=0.00001, n_epochs=20, n_steps=512)
+model = PPO(config["policy_type"],
+            env,
+            verbose=1,
+            tensorboard_log=f"runs/{wandb_run.id}",
+            learning_rate=0.00001,
+            n_epochs=20,
+            n_steps=256,
+            batch_size=256,
+            vf_coef=0.5,
+            ent_coef=0.01,
+            max_grad_norm=0.5
+            )
+
 
 # learn the game!
 model.learn(
