@@ -16,11 +16,11 @@ from gym.wrappers import GrayScaleObservation
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder, VecFrameStack, VecMonitor, VecNormalize
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CallbackList
-from stable_baselines3.common.atari_wrappers import WarpFrame, MaxAndSkipEnv
+# from stable_baselines3.common.atari_wrappers import WarpFrame, MaxAndSkipEnv
 from smbcustomnn001 import CustomNetwork, CustomActorCriticPolicy
 from stable_baselines3.common.evaluation import evaluate_policy
 from wandb.integration.sb3 import WandbCallback
-from wrappers import EpisodicLifeEnv, CustomReward
+from wrappers import EpisodicLifeEnv, CustomReward, MaxAndSkipEnv, ProcessFrameResGS
 
 
 # define custom neural net, timesteps, environment name
@@ -87,10 +87,12 @@ env = CustomReward(env)
 env = EpisodicLifeEnv(env)
 # set up the action space
 env = JoypadSpace(env, SIMPLE_MOVEMENT)
-# skip frames, return the max of last 2 frames
+env = ProcessFrameResGS(env)
 env = MaxAndSkipEnv(env, skip=4)
+# skip frames, return the max of last 2 frames
+# env = MaxAndSkipEnv(env, skip=4)
 # make it grayscale
-env = GrayScaleObservation(env, keep_dim=True)
+# env = GrayScaleObservation(env, keep_dim=True)
 # create vectorized wrapper
 env = DummyVecEnv([lambda: env])
 # create a stack of N frames
