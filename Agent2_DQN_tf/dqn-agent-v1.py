@@ -28,7 +28,7 @@ tf.keras.utils.disable_interactive_logging()
 # general configuration
 # hyperparameters, environment name, paths, etc
 config = {
-        "episode_timesteps": 512,
+        "episode_timesteps": 2005,  # 2005 seems to be the length of in-game clock
         "total_episodes": 10000,
         "batch_size": 32,
         "noop_max": 30,
@@ -477,9 +477,11 @@ while True:
                 reward -= 100.0
                 ep_rew.append(reward)
                 # print(f"finally got noop! reset now! Adding penalty of -100 :: {np.sum(ep_rew)}")
-                env.reset()
+                # not sure if reset is good
+                # env.reset()
                 action_buffer.clear()
-                break
+                # if reset is used, break loop
+                # break
 
         # reshape the next state to pass to neural network later
         next_state = next_state.reshape(-1, 84, 84, 1)
