@@ -548,10 +548,11 @@ while True:
                         print(f"soft update...")
                         dqn_agent.soft_update_target_model()
                 if episode % (batch_size) == 0:
-                    print(f"hard update...")
-                    dqn_agent.hard_update_target_model()
-                    print(f"train model...")
-                    dqn_agent.train(batch_size)
+                    if not episode == 0:
+                        print(f"hard update...")
+                        dqn_agent.hard_update_target_model()
+                        print(f"train model...")
+                        dqn_agent.train(batch_size)
 
             # update epsilon (modes > linear, greedy)
             dqn_agent.update_epsilon("linear", episode)
