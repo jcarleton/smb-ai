@@ -235,6 +235,9 @@ class MarioAgent:
         # agent variables
         self.state_space = state_size
         self.action_space = action_size
+        self.optimizer = Adam(learning_rate=config["learning_rate"], epsilon=0.01, clipnorm=1)
+        self.loss_function = "Huber"
+        self.initializer = tf.keras.initializers.HeNormal()
         self.memory = deque(maxlen=config["replay_memory"])
         self.gamma = config["gamma"]
         self.epsilon = config["epsilon"]
@@ -253,23 +256,23 @@ class MarioAgent:
     def build_model(self):
         model = Sequential()
         # model.add(Conv2D(1024, 8, strides=4, input_shape=self.state_space))
-        model.add(Conv2D(32, 8, strides=4, input_shape=self.state_space))
+        model.add(Conv2D(32, 8, strides=4, kernel_initializer=self.initializer, input_shape=self.state_space))
         model.add(Activation("selu"))
         # model.add(Conv2D(2048, 4, strides=2))
-        model.add(Conv2D(64, 4, strides=2))
+        model.add(Conv2D(64, 4, kernel_initializer=self.initializer, strides=2))
         model.add(Activation("selu"))
         # model.add(Conv2D(2048, 3, strides=1))
-        model.add(Conv2D(64, 3, strides=1))
+        model.add(Conv2D(64, 3, kernel_initializer=self.initializer, strides=1))
         model.add(Activation("selu"))
         model.add(Flatten())
         # model.add(Dense(4096, activation="selu"))
-        model.add(Dense(128, activation="selu"))
+        model.add(Dense(128, kernel_initializer=self.initializer, activation="selu"))
         model.add(Dense(self.action_space, activation="linear"))
         # add Adam optimizer and loss function
-        optimizer = Adam(learning_rate=config["learning_rate"], epsilon=0.01, clipnorm=1)
-        loss_function = "Huber"
+        # optimizer = Adam(learning_rate=config["learning_rate"], epsilon=0.01, clipnorm=1)
+        # loss_function = "Huber"
         # compile the model
-        model.compile(loss=loss_function, optimizer=optimizer, metrics=["accuracy"])
+        model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=["accuracy"])
         # plot it? looks pretty I guess
         # utils.plot_model(model, show_shapes=True)
         return model
