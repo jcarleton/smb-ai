@@ -430,7 +430,6 @@ while True:
     # configure some helper variables for each episode
     # agent's initial y position is == 79
     time_step = 0
-    y_pos = 79
     ep_rew = []
     epsilon_mean = []
     ts_done = 0
@@ -464,7 +463,6 @@ while True:
 
         # pass the action to the step function
         next_state, reward, done, info = env.step(action)
-        y_pos = info["y_pos"]
 
         # test if Mario fell below the ground, pointless to act here
         # todo - test penalties for this to make agent learn to not die by pits
