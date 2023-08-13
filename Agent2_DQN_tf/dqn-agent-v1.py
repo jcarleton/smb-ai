@@ -344,7 +344,7 @@ class MarioAgent:
 
     # metrics logging function
     # todo - add more metrics
-    def log(self, mer, mel, rew, len, episode, epsilon, frame, tensorboard_log=False):
+    def log(self, mer, mel, rew, len, episode, epsilon, frame, tensorboard_log=True):
         """
         log MER, MEL, episode rewards, episode length, epsilon, steps per episode
         """
