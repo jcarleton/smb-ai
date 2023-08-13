@@ -344,16 +344,16 @@ class MarioAgent:
 
     # metrics logging function
     # todo - add more metrics
-    def log(self, mer, mel, episode, epsilon, frame, tensorboard_log=False):
+    def log(self, mer, mel, rew, len, episode, epsilon, frame, tensorboard_log=False):
         """
-        log the running episodic reward, most recent reward,
-        episode count, epsilon value and frame count plus mem_perc which
-        is the percentage of the action memory that is full
+        log MER, MEL, episode rewards, episode length, epsilon, steps per episode
         """
         if tensorboard_log:
             with self.log_writer.as_default():
                 tf.summary.scalar("mean episode reward", mer, step=episode)
                 tf.summary.scalar("mean episode length", mel, step=episode)
+                tf.summary.scalar("episode reward", rew, step=episode)
+                tf.summary.scalar("episode length", len, step=episode)
                 tf.summary.scalar("epsilon", epsilon, step=episode)
                 tf.summary.scalar("steps per episode", frame, step=episode)
 
@@ -497,6 +497,11 @@ while True:
             flags_got += 1
             print(f"episode {episode} got flag!!!")
 
+        # update target model
+        if ts_done % 100 == 0:
+            dqn_agent.soft_update_target_model()
+            # dqn_agent.hard_update_target_model()
+
         # some handling of weird episode issues
         # some episodes are done with 0 timesteps and 0 reward
         # if this is not used, stats and training the model suffers with the invalid data/states
@@ -546,14 +551,14 @@ while True:
                       f"total flags {flags_got}")
                 # todo - add logging call here <<
                 # every N episodes, train the neural network :: model.fit...
-                if episode % (batch_size/4) == 0:
-                    if not episode % (batch_size) == 0:
-                        print(f"soft update...")
-                        dqn_agent.soft_update_target_model()
+                # if episode % (batch_size/4) == 0:
+                #     if not episode % (batch_size) == 0:
+                #         print(f"soft update...")
+                        # dqn_agent.soft_update_target_model()
                 if episode % (batch_size) == 0:
                     if not episode == 0:
-                        print(f"hard update...")
-                        dqn_agent.hard_update_target_model()
+                        # print(f"hard update...")
+                        # dqn_agent.hard_update_target_model()
                         print(f"train model...")
                         dqn_agent.train(batch_size)
 
