@@ -17,6 +17,7 @@ import numpy as np
 import collections
 import cv2
 from tqdm import tqdm
+import os
 
 # todo - logging instrumentation
 # import wandb
@@ -381,6 +382,12 @@ class MarioAgent:
             save_model(self.target_model, file_output)
 
 
+# checks if dirs exist to write to
+# creates if they don't exist
+def check_dirs(_path):
+    if _path is not None:
+        os.makedirs(_path, exist_ok=True)
+
 # validates an episode
 def episode_test(_done, _rew, _ts):
     if _done and _rew == 0.0 and _ts == 0:
@@ -420,6 +427,10 @@ reward_buffer = []
 length_buffer = []
 done = False
 
+# check dirs, create if they don't exist
+dirs = [config["save_path"], config["log_dir"]]
+for n in range(len(dirs)):
+    check_dirs(dirs[n])
 
 # run the training
 # todo - find solution for episodes with 0 timesteps (done)
