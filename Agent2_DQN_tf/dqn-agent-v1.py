@@ -44,7 +44,7 @@ config = {
         "epsilon_decay_greedy": (1/(100000*10)) * 5,
         # "epsilon_decay_greedy": 0.000005,
         "gamma": 0.99,
-        "replay_memory": 1000000,
+        "replay_memory": 100000,  # maybe too big makes it crash eventually
         "env_name": 'SuperMarioBros-v0',
         "save_path": './artifacts/',
         "load_path": './artifacts/',
