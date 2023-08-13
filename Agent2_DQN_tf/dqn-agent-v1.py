@@ -531,7 +531,6 @@ while True:
             # add reward to reward buffer, length to length buffer
             reward_buffer.append(np.sum(ep_rew))
             length_buffer.append(ts_done)
-            episode += 1
 
             if len(dqn_agent.memory) > batch_size and ts_done >= 0:
                 # print out stats for the run and cumulative stats
@@ -559,6 +558,7 @@ while True:
             # save the model each episode, just in case...
             dqn_agent.save("dqn-mario", "main")
             dqn_agent.save("dqn-mario", "target")
+            episode += 1
 
     # a way out of the infinite loop
     if episode == num_episodes:
