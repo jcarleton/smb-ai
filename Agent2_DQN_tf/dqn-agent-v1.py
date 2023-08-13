@@ -18,6 +18,8 @@ import collections
 import cv2
 from tqdm import tqdm
 import os
+import sys
+import psutil
 
 # todo - logging instrumentation
 # import wandb
@@ -425,6 +427,7 @@ episode = 0
 flags_got = 0
 reward_buffer = []
 length_buffer = []
+proc_mem = []
 done = False
 
 # check dirs, create if they don't exist
@@ -569,11 +572,16 @@ while True:
                 #         print(f"soft update...")
                         # dqn_agent.soft_update_target_model()
                 if episode % (batch_size) == 0:
+                    # store mem usage history
+                    proc_mem.append(str(psutil.virtual_memory().used // 1e6))
                     if not episode == 0:
                         # print(f"hard update...")
                         # dqn_agent.hard_update_target_model()
                         print(f"train model...")
                         dqn_agent.train(batch_size)
+                        # get mem usage
+                        print(f"mem buffer usage is {sys.getsizeof((dqn_agent.memory).copy())}")
+                        print(f"process memory usage is {str(psutil.virtual_memory().used // 1e6)}")
 
             # update epsilon (modes > linear, greedy)
             dqn_agent.update_epsilon("linear", episode)
