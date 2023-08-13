@@ -244,7 +244,7 @@ class MarioAgent:
         self.target_model = self.build_model()
         self.hard_update_target_model()
         self.soft_update_target_model()
-
+        self.log_writer = tf.summary.create_file_writer(logdir=config["log_dir"])
 
     # neural network architecture
     # loosely based off Nature paper (https://doi.org/10.1038/nature14236) methods section
