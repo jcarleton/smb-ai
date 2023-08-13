@@ -47,7 +47,8 @@ config = {
         "replay_memory": 1000000,
         "env_name": 'SuperMarioBros-v0',
         "save_path": './artifacts/',
-        "loac_path": './artifacts/'
+        "load_path": './artifacts/',
+        "log_dir": './logs/'
 }
 
 
@@ -361,10 +362,10 @@ class MarioAgent:
     # load a model
     def load(self, filename):
         if type == "main":
-            file_input = config["save_path"]+filename+"-main.keras"
+            file_input = config["load_path"]+filename+"-main.keras"
             load_model(self.main_model, file_input)
         if type == 'target':
-            file_input = config["save_path"]+filename+"-target.keras"
+            file_input = config["load_path"]+filename+"-target.keras"
             load_model(self.target_model, file_input)
 
     # save a model
