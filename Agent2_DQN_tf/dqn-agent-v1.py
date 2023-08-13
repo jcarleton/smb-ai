@@ -1,3 +1,6 @@
+# Jesse Carleton CM3070
+# DQN agent for SMB implemented in tf/keras
+
 from collections import deque
 import keras.losses
 from keras import losses
