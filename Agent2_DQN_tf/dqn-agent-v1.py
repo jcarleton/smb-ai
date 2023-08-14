@@ -351,7 +351,7 @@ class MarioAgent:
 
     # metrics logging function
     # todo - add more metrics
-    def log(self, mer, mel, rew, len, episode, epsilon, frame, tensorboard_log=True):
+    def log(self, mer, mel, rew, len, episode, epsilon, tensorboard_log=True):
         """
         log MER, MEL, episode rewards, episode length, epsilon, steps per episode
         """
@@ -362,7 +362,6 @@ class MarioAgent:
                 tf.summary.scalar("episode reward", rew, step=episode)
                 tf.summary.scalar("episode length", len, step=episode)
                 tf.summary.scalar("epsilon", epsilon, step=episode)
-                tf.summary.scalar("steps per episode", frame, step=episode)
 
     # todo - add model loader and replay - probably another module or refactor to allow for modality
     # load a model
@@ -559,6 +558,8 @@ while True:
             mer = reward_buffer / (episode + 1)
             length_buffer += ts_done
             mel = length_buffer / (episode + 1)
+            # log capture
+            # dqn_agent.log(mer, mel, ep_rew, length_buffer, episode + 1, dqn_agent.epsilon, tensorboard_log=True)
 
             if len(dqn_agent.memory) > batch_size and ts_done >= 0:
                 # print out stats for the run and cumulative stats
@@ -569,7 +570,6 @@ while True:
                       f"MER {str(mer)[:6]} ,"
                       f"MEL {int(mel)} ,"
                       f"total flags {flags_got}")
-                # todo - add logging call here <<
                 # every N episodes, train the neural network :: model.fit...
                 # if episode % (batch_size/4) == 0:
                 #     if not episode % (batch_size) == 0:
