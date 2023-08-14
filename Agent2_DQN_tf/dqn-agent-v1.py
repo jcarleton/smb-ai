@@ -362,6 +362,9 @@ class MarioAgent:
                 tf.summary.scalar("episode reward", rew, step=episode)
                 tf.summary.scalar("episode length", len, step=episode)
                 tf.summary.scalar("epsilon", epsilon, step=episode)
+        # todo - different file writer for metrics... csv?
+        # else:
+        # with open...
 
     # todo - add model loader and replay - probably another module or refactor to allow for modality
     # load a model
@@ -514,9 +517,15 @@ while True:
             print(f"episode {episode} got flag!!!")
 
         # update target model
-        if ts_done % 100 == 0:
-            dqn_agent.soft_update_target_model()
+        # seems to eat lots of memory over time and die after ~5k episodes
+        # if ts_done % 100 == 0:
+            # dqn_agent.soft_update_target_model()
             # dqn_agent.hard_update_target_model()
+        # should improve performance by not updating model after too short runs
+        if ts_done >= 100:
+            dqn_agent.hard_update_target_model()
+        # normal performance, seems to work mostly ok
+        # dqn_agent.hard_update_target_model()
 
         # some handling of weird episode issues
         # some episodes are done with 0 timesteps and 0 reward
