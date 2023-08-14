@@ -425,9 +425,11 @@ batch_size = config["batch_size"]
 dqn_agent = MarioAgent(state_space, action_space)
 episode = 0
 flags_got = 0
-reward_buffer = []
-length_buffer = []
-proc_mem = []
+# reward_buffer = []
+# length_buffer = []
+# proc_mem = []
+reward_buffer = 0
+length_buffer = 0
 done = False
 
 # check dirs, create if they don't exist
@@ -445,7 +447,6 @@ while True:
     # agent's initial y position is == 79
     time_step = 0
     ep_rew = []
-    epsilon_mean = []
     ts_done = 0
     noop_max = config["noop_max"]
     noop_action = 0
@@ -532,7 +533,6 @@ while True:
             break
         else:
             # print(f"episode {episode} is valid...")
-            epsilon_mean.append(dqn_agent.epsilon)
             # remember state transition
             dqn_agent.remember(state, action, reward, next_state, done)
             state = next_state
@@ -553,17 +553,21 @@ while True:
             continue
         else:
             # add reward to reward buffer, length to length buffer
-            reward_buffer.append(np.sum(ep_rew))
-            length_buffer.append(ts_done)
+            # reward_buffer.append(np.sum(ep_rew))
+            # length_buffer.append(ts_done)
+            reward_buffer += np.sum(ep_rew)
+            mer = reward_buffer / (episode + 1)
+            length_buffer += ts_done
+            mel = length_buffer / (episode + 1)
 
             if len(dqn_agent.memory) > batch_size and ts_done >= 0:
                 # print out stats for the run and cumulative stats
                 print(f"episode {episode} completed! "
                       f"{ts_done} timesteps done! "
                       f"REW of { np.sum(ep_rew) if len(ep_rew) > 0 else str(0.0) }, "
-                      f"epsilon {str(dqn_agent.epsilon)[:6]} "
-                      # f"epsilon {str(np.mean(epsilon_mean))[:6]} "
-                      f":: MER {str(np.mean(reward_buffer))[:6]} "
+                      f"epsilon {str(dqn_agent.epsilon)[:6]} ,"
+                      f"MER {str(mer)[:6]} ,"
+                      f"MEL {int(mel)} ,"
                       f"total flags {flags_got}")
                 # todo - add logging call here <<
                 # every N episodes, train the neural network :: model.fit...
@@ -572,15 +576,12 @@ while True:
                 #         print(f"soft update...")
                         # dqn_agent.soft_update_target_model()
                 if episode % (batch_size) == 0:
-                    # store mem usage history
-                    proc_mem.append(str(psutil.virtual_memory().used // 1e6))
                     if not episode == 0:
                         # print(f"hard update...")
                         # dqn_agent.hard_update_target_model()
                         print(f"train model...")
                         dqn_agent.train(batch_size)
                         # get mem usage
-                        print(f"mem buffer usage is {sys.getsizeof((dqn_agent.memory).copy())}")
                         print(f"process memory usage is {str(psutil.virtual_memory().used // 1e6)}")
 
             # update epsilon (modes > linear, greedy)
