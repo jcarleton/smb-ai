@@ -2,8 +2,6 @@
 # DQN agent for SMB implemented in tf/keras
 
 from collections import deque
-import keras.losses
-from keras import losses
 from keras.models import Sequential, load_model, save_model
 from keras.layers import Dense, Activation, Flatten, Conv2D
 from keras.optimizers import Adam
@@ -18,7 +16,6 @@ import collections
 import cv2
 from tqdm import tqdm
 import os
-import sys
 import psutil
 
 # todo - logging instrumentation
@@ -38,7 +35,7 @@ config = {
         "total_episodes": 10000,
         "batch_size": 32,
         "noop_max": 30,
-        "seed": 1337,  # not sure if this will be used, placeholder for now
+        "seed": 1337,
         "learning_rate": 0.0025,
         "epsilon": 1,
         "epsilon_min": 0.1,
@@ -240,7 +237,7 @@ class MarioAgent:
         self.action_space = action_size
         self.optimizer = Adam(learning_rate=config["learning_rate"], epsilon=0.01, clipnorm=1)
         self.loss_function = "Huber"
-        self.initializer = tf.keras.initializers.HeNormal()
+        self.initializer = tf.keras.initializers.HeNormal(seed=config["seed"])
         self.memory = deque(maxlen=config["replay_memory"])
         self.gamma = config["gamma"]
         self.epsilon = config["epsilon"]
@@ -368,7 +365,7 @@ class MarioAgent:
 
     # todo - add model loader and replay - probably another module or refactor to allow for modality
     # load a model
-    def load(self, filename):
+    def load(self, filename, type):
         if type == "main":
             file_input = config["load_path"]+filename+"-main.keras"
             load_model(self.main_model, file_input)
