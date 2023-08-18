@@ -34,7 +34,7 @@ tf.keras.utils.disable_interactive_logging()
 config = {
         "episode_timesteps": 2005,  # 2005 seems to be the length of in-game clock
         "total_episodes": 10000,
-        "batch_size": 256,
+        "batch_size": 32,
         "noop_max": 30,
         "seed": 1337,
         "learning_rate": 0.0025,
@@ -45,7 +45,7 @@ config = {
         "epsilon_decay_greedy": (1/(100000*10)) * 5,
         # "epsilon_decay_greedy": 0.000005,
         "gamma": 0.99,
-        "replay_memory": 100000,  # maybe too big makes it crash eventually
+        "replay_memory": 100000,
         "env_name": 'SuperMarioBros-v0',
         "save_path": './artifacts/',
         "load_path": './artifacts/',
@@ -238,6 +238,8 @@ class MarioAgent:
         self.action_space = action_size
         self.optimizer = Adam(learning_rate=config["learning_rate"], epsilon=0.01, clipnorm=1)
         self.loss_function = "Huber"
+        self.acc = 0
+        self.loss = 0
         self.initializer = tf.keras.initializers.HeNormal(seed=config["seed"])
         self.memory = deque(maxlen=config["replay_memory"])
         self.gamma = config["gamma"]
@@ -324,6 +326,7 @@ class MarioAgent:
             target[0][action] = reward
             # todo - add metric capture here?
             self.main_model.fit(state, target, epochs=1, use_multiprocessing=True, verbose=0)
+            self.loss, self.acc = self.main_model.evaluate(state, target, verbose=2)
 
     # did he die tho?
     # check if agent fell down a hole
@@ -342,9 +345,9 @@ class MarioAgent:
 
     # metrics logging function
     # todo - add more metrics
-    def log(self, mer, mel, rew, len, episode, epsilon, tensorboard_log=True):
+    def log(self, mer, mel, rew, len, episode, epsilon, loss, accuracy, tensorboard_log=True):
         """
-        log MER, MEL, episode rewards, episode length, epsilon, steps per episode
+        log MER, MEL, episode rewards, episode length, epsilon, loss, accuracy
         """
         if tensorboard_log:
             with self.log_writer.as_default():
@@ -353,6 +356,8 @@ class MarioAgent:
                 tf.summary.scalar("episode reward", rew, step=episode)
                 tf.summary.scalar("episode length", len, step=episode)
                 tf.summary.scalar("epsilon", epsilon, step=episode)
+                tf.summary.scalar("epsilon", loss, step=episode)
+                tf.summary.scalar("epsilon", accuracy, step=episode)
         # todo - different file writer for metrics... csv?
         # else:
         # with open...
@@ -559,7 +564,7 @@ while True:
             length_buffer += ts_done
             mel = length_buffer / (episode + 1)
             # log capture
-            # dqn_agent.log(mer, mel, ep_rew, length_buffer, episode + 1, dqn_agent.epsilon, tensorboard_log=True)
+            dqn_agent.log(mer, mel, ep_rew, length_buffer, episode+1, dqn_agent.epsilon, dqn_agent.loss, dqn_agent.acc, tensorboard_log=True)
 
             if len(dqn_agent.memory) > batch_size and ts_done >= 0:
                 # print out stats for the run and cumulative stats
@@ -572,6 +577,7 @@ while True:
                       f"total flags {flags_got}")
                 print(f"train model...")
                 dqn_agent.train(batch_size)
+                print(f"loss :: {dqn_agent.loss}, accuracy :: {dqn_agent.acc}")
                 # get mem usage
                 print(f"mem buffer usage is {sys.getsizeof((dqn_agent.memory).copy())}")
                 print(f"process memory usage is {str(psutil.virtual_memory().used // 1e6)}")
