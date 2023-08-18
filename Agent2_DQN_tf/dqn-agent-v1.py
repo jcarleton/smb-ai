@@ -17,6 +17,7 @@ import cv2
 from tqdm import tqdm
 import os
 import psutil
+import sys
 
 # todo - logging instrumentation
 # import wandb
@@ -33,7 +34,7 @@ tf.keras.utils.disable_interactive_logging()
 config = {
         "episode_timesteps": 2005,  # 2005 seems to be the length of in-game clock
         "total_episodes": 10000,
-        "batch_size": 32,
+        "batch_size": 256,
         "noop_max": 30,
         "seed": 1337,
         "learning_rate": 0.0025,
@@ -255,22 +256,15 @@ class MarioAgent:
     # replaced ReLU with SELU to fix vanishing gratient issue + dead neuron issue
     def build_model(self):
         model = Sequential()
-        # model.add(Conv2D(1024, 8, strides=4, input_shape=self.state_space))
         model.add(Conv2D(32, 8, strides=4, kernel_initializer=self.initializer, input_shape=self.state_space))
         model.add(Activation("selu"))
-        # model.add(Conv2D(2048, 4, strides=2))
         model.add(Conv2D(64, 4, kernel_initializer=self.initializer, strides=2))
         model.add(Activation("selu"))
-        # model.add(Conv2D(2048, 3, strides=1))
         model.add(Conv2D(64, 3, kernel_initializer=self.initializer, strides=1))
         model.add(Activation("selu"))
         model.add(Flatten())
-        # model.add(Dense(4096, activation="selu"))
         model.add(Dense(128, kernel_initializer=self.initializer, activation="selu"))
         model.add(Dense(self.action_space, activation="linear"))
-        # add Adam optimizer and loss function
-        # optimizer = Adam(learning_rate=config["learning_rate"], epsilon=0.01, clipnorm=1)
-        # loss_function = "Huber"
         # compile the model
         model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=["accuracy"])
         # plot it? looks pretty I guess
@@ -576,25 +570,22 @@ while True:
                       f"MER {str(mer)[:6]} ,"
                       f"MEL {int(mel)} ,"
                       f"total flags {flags_got}")
-                # every N episodes, train the neural network :: model.fit...
-                # if episode % (batch_size/4) == 0:
-                #     if not episode % (batch_size) == 0:
-                #         print(f"soft update...")
-                        # dqn_agent.soft_update_target_model()
-                if episode % (batch_size) == 0:
-                    if not episode == 0:
-                        # print(f"hard update...")
-                        # dqn_agent.hard_update_target_model()
-                        print(f"train model...")
-                        dqn_agent.train(batch_size)
-                        # get mem usage
-                        print(f"process memory usage is {str(psutil.virtual_memory().used // 1e6)}")
+                print(f"train model...")
+                dqn_agent.train(batch_size)
+                # get mem usage
+                print(f"mem buffer usage is {sys.getsizeof((dqn_agent.memory).copy())}")
+                print(f"process memory usage is {str(psutil.virtual_memory().used // 1e6)}")
+
+                # save the models after 250 episodes until complete
+                if episode % 250 == 0:
+                    dqn_agent.save("dqn-mario", "main")
+                    dqn_agent.save("dqn-mario", "target")
+
+                if episode % 300 == 0:
+                    dqn_agent.soft_update_target_model()
 
             # update epsilon (modes > linear, greedy)
             dqn_agent.update_epsilon("linear", episode)
-            # save the model each episode, just in case...
-            dqn_agent.save("dqn-mario", "main")
-            dqn_agent.save("dqn-mario", "target")
             episode += 1
 
     # a way out of the infinite loop
