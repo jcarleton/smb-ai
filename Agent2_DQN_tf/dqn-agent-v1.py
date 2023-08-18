@@ -1,10 +1,8 @@
-# Jesse Carleton CM3070
-# DQN agent for SMB implemented in tf/keras
-
 from collections import deque
 from keras.models import Sequential, load_model, save_model
 from keras.layers import Dense, Activation, Flatten, Conv2D
 from keras.optimizers import Adam
+from keras.callbacks import ModelCheckpoint
 import random
 import gym_super_mario_bros
 import gym
@@ -16,8 +14,8 @@ import collections
 import cv2
 from tqdm import tqdm
 import os
-import psutil
 import sys
+import psutil
 
 # todo - logging instrumentation
 # import wandb
@@ -32,11 +30,11 @@ tf.keras.utils.disable_interactive_logging()
 # general configuration
 # hyperparameters, environment name, paths, etc
 config = {
-        "episode_timesteps": 2005,  # 2005 seems to be the length of in-game clock
-        "total_episodes": 10000,
+        "episode_timesteps": 2005,  # 2005 seems to be the length of in-game clock, roughly
+        "total_episodes": 5000,
         "batch_size": 32,
         "noop_max": 30,
-        "seed": 1337,
+        "seed": 9876,  # used for kernel init
         "learning_rate": 0.0025,
         "epsilon": 1,
         "epsilon_min": 0.1,
@@ -325,7 +323,7 @@ class MarioAgent:
                 # target[0][action] = reward + (1 - done) * self.gamma * np.amax(self.target_model.predict(next_state))
             target[0][action] = reward
             # todo - add metric capture here?
-            self.main_model.fit(state, target, epochs=1, use_multiprocessing=True, verbose=0)
+            self.main_model.fit(state, target, epochs=1, use_multiprocessing=True, verbose=1)
             self.loss, self.acc = self.main_model.evaluate(state, target, verbose=2)
 
     # did he die tho?
@@ -344,10 +342,11 @@ class MarioAgent:
         return y_pos
 
     # metrics logging function
+    # example code was seen in CM3020 week 4, 4111_code_pack (keras_io_dqn_save_weights_v1.py)
     # todo - add more metrics
     def log(self, mer, mel, rew, len, episode, epsilon, loss, accuracy, tensorboard_log=True):
         """
-        log MER, MEL, episode rewards, episode length, epsilon, loss, accuracy
+        log MER, MEL, episode rewards, episode length, epsilon
         """
         if tensorboard_log:
             with self.log_writer.as_default():
@@ -368,7 +367,7 @@ class MarioAgent:
         if type == "main":
             file_input = config["load_path"]+filename+"-main.keras"
             load_model(self.main_model, file_input)
-        if type == 'target':
+        if type == "target":
             file_input = config["load_path"]+filename+"-target.keras"
             load_model(self.target_model, file_input)
 
@@ -377,7 +376,7 @@ class MarioAgent:
         if type == "main":
             file_output = config["save_path"]+filename+"-main.keras"
             save_model(self.main_model, file_output)
-        if type == 'target':
+        if type == "target":
             file_output = config["save_path"]+filename+"-target.keras"
             save_model(self.target_model, file_output)
 
@@ -423,17 +422,16 @@ batch_size = config["batch_size"]
 dqn_agent = MarioAgent(state_space, action_space)
 episode = 0
 flags_got = 0
-# reward_buffer = []
-# length_buffer = []
-# proc_mem = []
 reward_buffer = 0
 length_buffer = 0
 done = False
 
 # check dirs, create if they don't exist
-dirs = [config["save_path"], config["log_dir"]]
+dirs = [config["save_path"], config["log_dir"]
 for n in range(len(dirs)):
     check_dirs(dirs[n])
+
+# todo - check for models, load if avail
 
 # run the training
 # todo - find solution for episodes with 0 timesteps (done)
@@ -444,7 +442,9 @@ while True:
     # configure some helper variables for each episode
     # agent's initial y position is == 79
     time_step = 0
-    ep_rew = []
+    # ep_rew = []
+    ep_rew = 0
+    # epsilon_mean = []
     ts_done = 0
     noop_max = config["noop_max"]
     noop_action = 0
@@ -493,40 +493,23 @@ while True:
             if buffer_check == True:
                 # print(f"noop rewards before {np.sum(ep_rew)}")
                 reward -= 100.0
-                ep_rew.append(reward)
+                # ep_rew.append(reward)
+                ep_rew -= 100.0
                 # print(f"finally got noop! reset now! Adding penalty of -100 :: {np.sum(ep_rew)}")
-                # not sure if reset is good
-                # env.reset()
                 action_buffer.clear()
-                # if reset is used, break loop
-                # break
 
         # reshape the next state to pass to neural network later
         next_state = next_state.reshape(-1, 84, 84, 1)
 
         # metrics collection
         ts_done = step + 1
-        ep_rew.append(reward)
+        ep_rew += reward
 
         if info["flag_get"]:
             flags_got += 1
             print(f"episode {episode} got flag!!!")
 
-        # update target model
-        # seems to eat lots of memory over time and die after ~5k episodes
-        # if ts_done % 100 == 0:
-            # dqn_agent.soft_update_target_model()
-            # dqn_agent.hard_update_target_model()
-        # should improve performance by not updating model after too short runs
-        if ts_done >= 100:
-            dqn_agent.hard_update_target_model()
-        # normal performance, seems to work mostly ok
-        # dqn_agent.hard_update_target_model()
-
-        # some handling of weird episode issues
-        # some episodes are done with 0 timesteps and 0 reward
-        # if this is not used, stats and training the model suffers with the invalid data/states
-        if done and np.sum(ep_rew) == 0.0 and ts_done <= 10:
+        if done and ep_rew == 0.0 and ts_done <= 10:
             print(f"1 something weird going on with this episode, got {ts_done} timesteps, {np.sum(ep_rew)} rewards?! Discarding...")
             env.reset()
             break
@@ -536,13 +519,12 @@ while True:
             env.reset()
             break
         else:
-            # print(f"episode {episode} is valid...")
             # remember state transition
             dqn_agent.remember(state, action, reward, next_state, done)
             state = next_state
 
     # # same logic as above, but continue and don't count that episode
-    if done and np.sum(ep_rew) == 0.0 and ts_done <= 10:
+    if done and ep_rew == 0.0 and ts_done <= 10:
         print(f"3 something weird going on with this episode, got {ts_done} timesteps, {np.sum(ep_rew)} rewards?! Discarding...")
         env.reset()
         continue
@@ -551,36 +533,35 @@ while True:
         env.reset()
         continue
     else:
-        if np.sum(ep_rew) == 0.0:
+        if ep_rew == 0.0:
             print("bad state... discard...")
             env.reset()
             continue
         else:
-            # add reward to reward buffer, length to length buffer
-            # reward_buffer.append(np.sum(ep_rew))
-            # length_buffer.append(ts_done)
-            reward_buffer += np.sum(ep_rew)
+            reward_buffer += ep_rew
             mer = reward_buffer / (episode + 1)
             length_buffer += ts_done
             mel = length_buffer / (episode + 1)
-            # log capture
             dqn_agent.log(mer, mel, ep_rew, length_buffer, episode+1, dqn_agent.epsilon, dqn_agent.loss, dqn_agent.acc, tensorboard_log=True)
 
-            if len(dqn_agent.memory) > batch_size and ts_done >= 0:
+            if len(dqn_agent.memory) > batch_size and ts_done >= 10:
                 # print out stats for the run and cumulative stats
                 print(f"episode {episode} completed! "
                       f"{ts_done} timesteps done! "
-                      f"REW of { np.sum(ep_rew) if len(ep_rew) > 0 else str(0.0) }, "
-                      f"epsilon {str(dqn_agent.epsilon)[:6]} ,"
-                      f"MER {str(mer)[:6]} ,"
-                      f"MEL {int(mel)} ,"
+                      f"REW of {ep_rew}, "
+                      f"epsilon {str(dqn_agent.epsilon)[:6]}, "
+                      f"MER {str(mer)[:6]}, "
+                      f"MEL {int(mel)}, "
                       f"total flags {flags_got}")
+
+                if episode % 10 == 0:
+                    print(f"mem buffer usage is {sys.getsizeof((dqn_agent.memory).copy())}")
+                    print(f"process memory usage is {str(psutil.virtual_memory().used // 1e6)}")
+
+
                 print(f"train model...")
                 dqn_agent.train(batch_size)
                 print(f"loss :: {dqn_agent.loss}, accuracy :: {dqn_agent.acc}")
-                # get mem usage
-                print(f"mem buffer usage is {sys.getsizeof((dqn_agent.memory).copy())}")
-                print(f"process memory usage is {str(psutil.virtual_memory().used // 1e6)}")
 
                 # save the models after 250 episodes until complete
                 if episode % 250 == 0:
@@ -588,9 +569,10 @@ while True:
                     dqn_agent.save("dqn-mario", "target")
 
                 if episode % 300 == 0:
+                    print(f"soft update...")
                     dqn_agent.soft_update_target_model()
 
-            # update epsilon (modes > linear, greedy)
+
             dqn_agent.update_epsilon("linear", episode)
             episode += 1
 
