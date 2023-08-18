@@ -1,3 +1,5 @@
+# Jesse Carleton CM3070
+
 from collections import deque
 from keras.models import Sequential, load_model, save_model
 from keras.layers import Dense, Activation, Flatten, Conv2D
