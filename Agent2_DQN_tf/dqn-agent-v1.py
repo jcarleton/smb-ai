@@ -348,7 +348,7 @@ class MarioAgent:
     # todo - add more metrics
     def log(self, mer, mel, rew, len, episode, epsilon, loss, accuracy, tensorboard_log=True):
         """
-        log MER, MEL, episode rewards, episode length, epsilon
+        log MER, MEL, episode rewards, episode length, epsilon, loss, accuracy
         """
         if tensorboard_log:
             with self.log_writer.as_default():
@@ -357,8 +357,8 @@ class MarioAgent:
                 tf.summary.scalar("episode reward", rew, step=episode)
                 tf.summary.scalar("episode length", len, step=episode)
                 tf.summary.scalar("epsilon", epsilon, step=episode)
-                tf.summary.scalar("epsilon", loss, step=episode)
-                tf.summary.scalar("epsilon", accuracy, step=episode)
+                tf.summary.scalar("loss", loss, step=episode)
+                tf.summary.scalar("accuracy", accuracy, step=episode)
         # todo - different file writer for metrics... csv?
         # else:
         # with open...
