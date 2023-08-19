@@ -252,6 +252,7 @@ class MarioAgent:
         self.hard_update_target_model()
         self.soft_update_target_model()
         self.log_writer = tf.summary.create_file_writer(logdir=config["log_dir"])
+        self.hash = self.hash_gen()
 
     # neural network architecture
     # loosely based off Nature paper (https://doi.org/10.1038/nature14236) methods section
@@ -363,24 +364,32 @@ class MarioAgent:
         # else:
         # with open...
 
+    def hash_gen(self):
+        hash = ''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(8))
+        # print(hash)
+        return hash
+
     # todo - add model loader and replay - probably another module or refactor to allow for modality
     # load a model
     def load(self, filename, type):
         if type == "main":
-            file_input = config["load_path"]+filename+"-main.keras"
+            file_input = config["load_path"]+filename
             load_model(self.main_model, file_input)
         if type == "target":
-            file_input = config["load_path"]+filename+"-target.keras"
+            file_input = config["load_path"]+filename
             load_model(self.target_model, file_input)
 
     # save a model
     def save(self, filename, type):
         if type == "main":
-            file_output = config["save_path"]+filename+"-main.keras"
+            file_output = config["save_path"]+filename+"-main-"+self.hash+".keras"
             save_model(self.main_model, file_output)
+            print(f"main model being saved as {file_output}")
         if type == "target":
-            file_output = config["save_path"]+filename+"-target.keras"
+            file_output = config["save_path"]+filename+"-target-"+self.hash+".keras"
             save_model(self.target_model, file_output)
+            print(f"target model being saved as {file_output}")
+
 
 
 # checks if dirs exist to write to
