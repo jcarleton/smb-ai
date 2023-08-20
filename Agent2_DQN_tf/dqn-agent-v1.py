@@ -448,17 +448,12 @@ length_buffer = 0
 done = False
 
 # check dirs, create if they don't exist
-dirs = [config["save_path"], config["log_dir"]
+dirs = [config["save_path"], config["log_dir"]]
 for n in range(len(dirs)):
     check_dirs(dirs[n])
 
 # todo - check for models, load if avail
-
 # run the training
-# todo - find solution for episodes with 0 timesteps (done)
-# this is likely due to game over and reset
-# issues caused: poisoned metrics (0 ep_len, 0 ep_rew), unable to use single level env
-# such as SuperMarioBros-1-1-v0
 while True:
     # configure some helper variables for each episode
     # agent's initial y position is == 79
