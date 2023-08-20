@@ -352,7 +352,7 @@ class MarioAgent:
     # metrics logging function
     # example code was seen in CM3020 week 4, 4111_code_pack (keras_io_dqn_save_weights_v1.py)
     # todo - add more metrics
-    def log(self, mer, mel, rew, len, episode, epsilon, loss, accuracy, flag, score, coins, max_rew, tensorboard_log=True):
+    def log(self, mer, mel, rew, len, episode, epsilon, loss, accuracy, flag, score, coins, max_rew, high_score, tensorboard_log=True):
         """
         log MER, MEL, episode rewards, episode length, epsilon, loss, accuracy, goal, in game score, coins
         """
@@ -369,6 +369,7 @@ class MarioAgent:
                 tf.summary.scalar("score", score, step=episode)
                 tf.summary.scalar("coins", coins, step=episode)
                 tf.summary.scalar("ep reward max", max_rew, step=episode)
+                tf.summary.scalar("high score", high_score, step=episode)
         # todo - different file writer for metrics... csv?
         # else:
         # with open...
@@ -443,6 +444,7 @@ dqn_agent = MarioAgent(state_space, action_space)
 episode = 0
 flags_got = 0
 max_rew = 0
+high_score = 0
 reward_buffer = 0
 length_buffer = 0
 done = False
@@ -560,8 +562,10 @@ while True:
             mel = length_buffer / (episode + 1)
             if ep_rew > max_rew:
                 max_rew = ep_rew
+            if info['score'] > high_score:
+                high_score = info['score']
             dqn_agent.log(mer, mel, ep_rew, length_buffer, episode+1, dqn_agent.epsilon, dqn_agent.loss, dqn_agent.acc,
-                          flags_got, info['score'], info['coins'], max_rew, tensorboard_log=True)
+                          flags_got, info['score'], info['coins'], max_rew, high_score, tensorboard_log=True)
 
             if len(dqn_agent.memory) > batch_size and ts_done >= 10:
                 # print out stats for the run and cumulative stats
@@ -571,7 +575,11 @@ while True:
                       f"epsilon {str(dqn_agent.epsilon)[:6]}, "
                       f"MER {str(mer)[:6]}, "
                       f"MEL {int(mel)}, "
-                      f"total flags {flags_got}")
+                      f"total flags {flags_got}, "
+                      f"in game ep score {info['score']}, "
+                      f"high score {high_score}, "
+                      f"{info['coins']} coins got this ep, "
+                      f"got up to x pos {info['x_pos']}")
 
                 if episode % 10 == 0:
                     print(f"mem buffer usage is {sys.getsizeof((dqn_agent.memory).copy())}")
