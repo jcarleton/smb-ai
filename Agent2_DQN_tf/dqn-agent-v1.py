@@ -580,8 +580,9 @@ while True:
                     dqn_agent.save("dqn-mario", "target")
 
                 if episode % 300 == 0:
-                    print(f"soft update...")
-                    dqn_agent.soft_update_target_model()
+                    if not episode == 0:
+                        print(f"soft update...")
+                        dqn_agent.soft_update_target_model()
 
 
             dqn_agent.update_epsilon("linear", episode)
