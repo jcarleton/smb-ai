@@ -374,6 +374,8 @@ class MarioAgent:
         # else:
         # with open...
 
+    # create a random string of 8 alpha-num characters
+    # guidance on this from https://pynative.com/python-generate-random-string/
     def hash_gen(self):
         hash = ''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(8))
         # print(hash)
