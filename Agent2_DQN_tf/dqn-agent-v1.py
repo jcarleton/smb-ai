@@ -33,11 +33,11 @@ tf.keras.utils.disable_interactive_logging()
 # hyperparameters, environment name, paths, etc
 config = {
         "episode_timesteps": 2005,  # 2005 seems to be the length of in-game clock, roughly
-        "total_episodes": 5000,
+        "total_episodes": 2500,
         "batch_size": 32,
         "noop_max": 30,
         "seed": 9876,  # used for kernel init
-        "learning_rate": 0.0025,
+        "learning_rate": 0.005,
         "epsilon": 1,
         "epsilon_min": 0.1,
         "epsilon_decay_linear": 0.0001,
@@ -257,16 +257,21 @@ class MarioAgent:
     # neural network architecture
     # loosely based off Nature paper (https://doi.org/10.1038/nature14236) methods section
     # replaced ReLU with SELU to fix vanishing gratient issue + dead neuron issue
+    # high neuron count for GPU use only, testing currently vs simpler implementation
     def build_model(self):
         model = Sequential()
         model.add(Conv2D(32, 8, strides=4, kernel_initializer=self.initializer, input_shape=self.state_space))
+        # model.add(Conv2D(1024, 16, kernel_initializer=self.initializer, strides=4, input_shape=self.state_space))
         model.add(Activation("selu"))
         model.add(Conv2D(64, 4, kernel_initializer=self.initializer, strides=2))
+        # model.add(Conv2D(2048, 8, kernel_initializer=self.initializer, strides=2))
         model.add(Activation("selu"))
+        model.add(Conv2D(64, 3, kernel_initializer=self.initializer, strides=1))
         model.add(Conv2D(64, 3, kernel_initializer=self.initializer, strides=1))
         model.add(Activation("selu"))
         model.add(Flatten())
         model.add(Dense(128, kernel_initializer=self.initializer, activation="selu"))
+        # model.add(Dense(8192, kernel_initializer=self.initializer, activation="selu"))
         model.add(Dense(self.action_space, activation="linear"))
         # compile the model
         model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=["accuracy"])
@@ -347,9 +352,9 @@ class MarioAgent:
     # metrics logging function
     # example code was seen in CM3020 week 4, 4111_code_pack (keras_io_dqn_save_weights_v1.py)
     # todo - add more metrics
-    def log(self, mer, mel, rew, len, episode, epsilon, loss, accuracy, tensorboard_log=True):
+    def log(self, mer, mel, rew, len, episode, epsilon, loss, accuracy, flag, score, coins, tensorboard_log=True):
         """
-        log MER, MEL, episode rewards, episode length, epsilon, loss, accuracy
+        log MER, MEL, episode rewards, episode length, epsilon, loss, accuracy, goal, in game score, coins
         """
         if tensorboard_log:
             with self.log_writer.as_default():
@@ -360,6 +365,9 @@ class MarioAgent:
                 tf.summary.scalar("epsilon", epsilon, step=episode)
                 tf.summary.scalar("loss", loss, step=episode)
                 tf.summary.scalar("accuracy", accuracy, step=episode)
+                tf.summary.scalar("goal", flag, step=episode)
+                tf.summary.scalar("score", score, step=episode)
+                tf.summary.scalar("coins", coins, step=episode)
         # todo - different file writer for metrics... csv?
         # else:
         # with open...
@@ -553,7 +561,8 @@ while True:
             mer = reward_buffer / (episode + 1)
             length_buffer += ts_done
             mel = length_buffer / (episode + 1)
-            dqn_agent.log(mer, mel, ep_rew, length_buffer, episode+1, dqn_agent.epsilon, dqn_agent.loss, dqn_agent.acc, tensorboard_log=True)
+            dqn_agent.log(mer, mel, ep_rew, length_buffer, episode+1, dqn_agent.epsilon, dqn_agent.loss, dqn_agent.acc,
+                          flags_got, info['score'], info['coins'], tensorboard_log=True)
 
             if len(dqn_agent.memory) > batch_size and ts_done >= 10:
                 # print out stats for the run and cumulative stats
@@ -579,7 +588,7 @@ while True:
                     dqn_agent.save("dqn-mario", "main")
                     dqn_agent.save("dqn-mario", "target")
 
-                if episode % 300 == 0:
+                if episode % 100 == 0:
                     if not episode == 0:
                         print(f"soft update...")
                         dqn_agent.soft_update_target_model()
