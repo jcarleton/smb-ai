@@ -583,7 +583,7 @@ while True:
                       f"high score {high_score} \r\n"
                       f"max rewards {max_rew} \r\n"
                       f"{info['coins']} coins got this ep \r\n"
-                      f"got up to x pos {info['x_pos']}"
+                      f"got up to x pos {info['x_pos']} \r\n"
                       f"#########################################")
 
                 if episode % 10 == 0:
