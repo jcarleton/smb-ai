@@ -571,17 +571,20 @@ while True:
 
             if len(dqn_agent.memory) > batch_size and ts_done >= 10:
                 # print out stats for the run and cumulative stats
-                print(f"episode {episode} completed! "
-                      f"{ts_done} timesteps done! "
-                      f"REW of {ep_rew}, "
-                      f"epsilon {str(dqn_agent.epsilon)[:6]}, "
-                      f"MER {str(mer)[:6]}, "
-                      f"MEL {int(mel)}, "
-                      f"total flags {flags_got}, "
-                      f"in game ep score {info['score']}, "
-                      f"high score {high_score}, "
-                      f"{info['coins']} coins got this ep, "
-                      f"got up to x pos {info['x_pos']}")
+                print(f"#########################################"
+                      f"episode {episode} completed! \r\n"
+                      f"{ts_done} timesteps done! \r\n"
+                      f"REW of {ep_rew} \r\n"
+                      f"epsilon {str(dqn_agent.epsilon)[:6]} \r\n"
+                      f"MER {str(mer)[:6]} \r\n"
+                      f"MEL {int(mel)} \r\n"
+                      f"total flags {flags_got} \r\n"
+                      f"in game ep score {info['score']} \r\n"
+                      f"high score {high_score} \r\n"
+                      f"max rewards {max_rew} \r\n"
+                      f"{info['coins']} coins got this ep \r\n"
+                      f"got up to x pos {info['x_pos']}"
+                      f"#########################################")
 
                 if episode % 10 == 0:
                     print(f"mem buffer usage is {sys.getsizeof((dqn_agent.memory).copy())}")
