@@ -571,7 +571,7 @@ while True:
 
             if len(dqn_agent.memory) > batch_size and ts_done >= 10:
                 # print out stats for the run and cumulative stats
-                print(f"#########################################"
+                print(f"######################################### \r\n"
                       f"episode {episode} completed! \r\n"
                       f"{ts_done} timesteps done! \r\n"
                       f"REW of {ep_rew} \r\n"
