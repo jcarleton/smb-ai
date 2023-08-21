@@ -445,6 +445,7 @@ batch_size = config["batch_size"]
 dqn_agent = MarioAgent(state_space, action_space)
 episode = 0
 flags_got = 0
+flag_x_pos = 3161  # this is for 1-1, other levels may be different, but assuming > 3000
 max_rew = 0
 high_score = 0
 reward_buffer = 0
@@ -583,8 +584,8 @@ while True:
                       f"high score {high_score} \r\n"
                       f"max rewards {max_rew} \r\n"
                       f"{info['coins']} coins got this ep \r\n"
-                      f"got up to x pos {info['x_pos']} \r\n"
-                      f"#########################################")
+                      f"got up to x pos {info['x_pos']}, {flag_x_pos - info['x_pos']} away from goal \r\n"
+                      f"######################################### \r\n")
 
                 if episode % 10 == 0:
                     print(f"mem buffer usage is {sys.getsizeof((dqn_agent.memory).copy())}")
