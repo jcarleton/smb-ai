@@ -18,10 +18,7 @@ from tqdm import tqdm
 import os
 import sys
 import psutil
-
-# todo - logging instrumentation
-# import wandb
-# from wandb.keras import WandbMetricsLogger, WandbModelCheckpoint
+import wandb
 
 
 # reduce console logging, otherwise quite noisy
@@ -54,12 +51,12 @@ config = {
 
 
 # todo - wandb init
-# wandb_run = wandb.init(
-#     project="smb-ai-dqn",
-#     sync_tensorboard=True,
-#     monitor_gym=True,
-#     save_code=True
-# )
+wandb_run = wandb.init(
+    project="smb-ai-dqn",
+    sync_tensorboard=True,
+    monitor_gym=True,
+    save_code=True
+)
 
 
 # custom action space for agent
@@ -463,9 +460,7 @@ while True:
     # configure some helper variables for each episode
     # agent's initial y position is == 79
     time_step = 0
-    # ep_rew = []
     ep_rew = 0
-    # epsilon_mean = []
     ts_done = 0
     noop_max = config["noop_max"]
     noop_action = 0
@@ -567,12 +562,12 @@ while True:
                 max_rew = ep_rew
             if info['score'] > high_score:
                 high_score = info['score']
-            dqn_agent.log(mer, mel, ep_rew, length_buffer, episode+1, dqn_agent.epsilon, dqn_agent.loss, dqn_agent.acc,
+            dqn_agent.log(mer, mel, ep_rew, ts_done, episode+1, dqn_agent.epsilon, dqn_agent.loss, dqn_agent.acc,
                           flags_got, info['score'], info['coins'], max_rew, high_score, tensorboard_log=True)
 
             if len(dqn_agent.memory) > batch_size and ts_done >= 10:
                 # print out stats for the run and cumulative stats
-                print(f"######################################### \r\n"
+                print(f"\r\n######################################### \r\n"
                       f"episode {episode} completed! \r\n"
                       f"{ts_done} timesteps done! \r\n"
                       f"REW of {ep_rew} \r\n"
