@@ -22,13 +22,15 @@ class CustomReward(gym.RewardWrapper):
             # reward if...
             # reach the flag
             if info['flag_get']:
-                reward += 1000.0
+                reward += 2500.0
             # get coins
             elif info['coins'] > 0:
                 reward += info['coins'] * 100.0
+                # reward += info['coins'] * 500.0
             # increase score
             elif info['score'] > 0:
-                reward += info['score'] * 1.0
+                reward += info['score']
+                # reward += info['score'] * 10.0
             # get mushroom
             elif info['status'] == 'tall':
                 reward += 100.0
@@ -37,14 +39,17 @@ class CustomReward(gym.RewardWrapper):
                 reward += 200.0
             # move further right on screen
             elif info['x_pos'] > 0:
+                # reward += info['x_pos'] * 2.5
                 reward += info['x_pos']
             # penalties
-            # time progression
-            elif info['time'] > 0:
-                reward -= (400 - info['time']) % 3
-            # penalize inaction
+            # loss of life
+            elif info['life'] == 1:
+                reward -= 500.0
+            elif info['life'] == 0:
+                reward -= 500.0
+            # penalize inaction for each step
             else:
-                reward -= 50.0
+                reward -= 10.0
         return state, reward, done, info
 
 

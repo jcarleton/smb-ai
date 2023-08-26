@@ -21,6 +21,7 @@ from smbcustomnn001 import CustomNetwork, CustomActorCriticPolicy
 from stable_baselines3.common.evaluation import evaluate_policy
 from wandb.integration.sb3 import WandbCallback
 from wrappers import EpisodicLifeEnv, CustomReward, MaxAndSkipEnv, ProcessFrameResGS
+from stable_baselines3.common.logger import TensorBoardOutputFormat
 
 
 # define custom neural net, timesteps, environment name
@@ -79,6 +80,72 @@ class trainingCallback(BaseCallback):
         return True
 
 
+class SummaryWriterCallback(BaseCallback):
+    '''
+    Snippet skeleton from Stable baselines3 documentation here:
+    https://stable-baselines3.readthedocs.io/en/master/guide/tensorboard.html#directly-accessing-the-summary-writer
+    '''
+    def __init__(self):
+        super().__init__()
+        self.goals = 0
+        self.ep_rew_max = 0
+        self.ep_rew = 0
+        self.high_score = 0
+        self.high_score_counter = 0
+
+    def _on_training_start(self):
+        self._log_freq = 1  # log every 1 calls
+
+        output_formats = self.logger.output_formats
+        # Save reference to tensorboard formatter object
+        # note: the failure case (not formatter found) is not handled here, should be done with try/except.
+        self.tb_formatter = next(formatter for formatter in output_formats if isinstance(formatter, TensorBoardOutputFormat))
+
+    def _on_step(self) -> bool:
+        '''
+        Log my_custom_reward every _log_freq(th) to tensorboard for each environment
+        '''
+        if self.n_calls % self._log_freq == 0:
+            # print(f"locals is {self.locals.keys()}")
+            if self.locals['n_steps'] == 0:
+                self.ep_done = False
+            if self.locals['n_steps'] > 0:
+                self.ep_done = self.locals['done']
+
+            # print(f"see if the ep is done.. "
+            #       f"num steps = {self.locals['n_steps']}")
+
+
+            score = self.locals['infos'][0]['score']
+            # print(f"got this score {score}")
+            self.tb_formatter.writer.add_scalar("game/score", score, self.n_calls)
+
+            if self.locals['infos'][0]['flag_get']:
+                self.goals += 1
+            for i in range(self.locals['env'].num_envs):
+                self.tb_formatter.writer.add_scalar("game/goal", self.goals, self.n_calls)
+
+            coins = self.locals['infos'][0]['coins']
+            self.tb_formatter.writer.add_scalar("game/coins", coins, self.n_calls)
+
+            if not self.ep_done:
+                self.ep_rew += self.locals['rewards'][0]
+
+            if self.ep_done:
+                self.ep_rew += self.locals['rewards'][0]
+                self.high_score_counter += self.locals['infos'][0]['score']
+
+                if self.ep_rew > self.ep_rew_max:
+                    self.ep_rew_max = self.ep_rew
+                    self.tb_formatter.writer.add_scalar("game/ep_rew_max", self.ep_rew_max, self.n_calls)
+                    self.ep_rew = 0
+
+                if self.high_score_counter > self.high_score:
+                    self.high_score = self.high_score_counter
+                    self.tb_formatter.writer.add_scalar("game/high score", self.high_score, self.n_calls)
+                    self.high_score_counter = 0
+
+
 # set up the environment
 env = gym_super_mario_bros.make('SuperMarioBros-v0')
 # custom rewards
@@ -132,7 +199,9 @@ model.learn(total_timesteps=config["total_timesteps"],
             verbose=2,
             ),
             trainingCallback(interval=config["total_timesteps"]/10,
-            filepath=f"models/{wandb_run.id}")],
+            filepath=f"models/{wandb_run.id}"),
+            SummaryWriterCallback()
+            ],
             )
 
 
