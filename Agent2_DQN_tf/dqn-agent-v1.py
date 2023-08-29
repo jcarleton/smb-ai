@@ -8,6 +8,7 @@ from keras.callbacks import ModelCheckpoint
 import random
 import gym_super_mario_bros
 import gym
+from gym.wrappers import RecordVideo
 import tensorflow as tf
 from nes_py.wrappers import JoypadSpace
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT, RIGHT_ONLY
@@ -27,6 +28,12 @@ tf.get_logger().setLevel('INFO')
 tf.keras.utils.disable_interactive_logging()
 
 
+# create a random string of 8 alpha-num characters
+# guidance on this from https://pynative.com/python-generate-random-string/
+run_hash = ''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(8))
+
+
+
 # general configuration
 # hyperparameters, environment name, paths, etc
 config = {
@@ -35,6 +42,7 @@ config = {
         "batch_size": 32,
         "noop_max": 30,
         "seed": 9876,  # used for kernel init
+        "run_hash": run_hash,
         "learning_rate": 0.005,
         "epsilon": 1,
         "epsilon_min": 0.1,
@@ -47,7 +55,8 @@ config = {
         "env_name": 'SuperMarioBros-v0',
         "save_path": './artifacts/',
         "load_path": './artifacts/',
-        "log_dir": './logs/'
+        "log_dir": './logs/',
+        "video_dir": './videos/'
 }
 
 
@@ -250,7 +259,8 @@ class MarioAgent:
         self.hard_update_target_model()
         self.soft_update_target_model()
         self.log_writer = tf.summary.create_file_writer(logdir=config["log_dir"])
-        self.hash = self.hash_gen()
+        # self.hash = self.hash_gen()
+        self.hash = run_hash
 
     # neural network architecture
     # loosely based off Nature paper (https://doi.org/10.1038/nature14236) methods section
@@ -374,12 +384,12 @@ class MarioAgent:
         # else:
         # with open...
 
-    # create a random string of 8 alpha-num characters
-    # guidance on this from https://pynative.com/python-generate-random-string/
-    def hash_gen(self):
-        hash = ''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(8))
-        # print(hash)
-        return hash
+    # # create a random string of 8 alpha-num characters
+    # # guidance on this from https://pynative.com/python-generate-random-string/
+    # def hash_gen(self):
+    #     hash = ''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(8))
+    #     # print(hash)
+    #     return hash
 
     # todo - add model loader and replay - probably another module or refactor to allow for modality
     # load a model
@@ -394,11 +404,13 @@ class MarioAgent:
     # save a model
     def save(self, filename, type):
         if type == "main":
-            file_output = config["save_path"]+filename+"-main-"+self.hash+".keras"
+            file_output = config["save_path"]+filename+"-main-"+run_hash+".keras"
+            # file_output = config["save_path"]+filename+"-main-"+self.hash+".keras"
             save_model(self.main_model, file_output)
             print(f"main model being saved as {file_output}")
         if type == "target":
-            file_output = config["save_path"]+filename+"-target-"+self.hash+".keras"
+            file_output = config["save_path"]+filename+"-target-"+run_hash+".keras"
+            # file_output = config["save_path"]+filename+"-target-"+self.hash+".keras"
             save_model(self.target_model, file_output)
             print(f"target model being saved as {file_output}")
 
@@ -432,7 +444,7 @@ env = CustomReward(env)
 env = EpisodicLifeEnv(env)
 env = MaxAndSkipEnv(env, 4)
 env = ProcessFrame84(env)
-
+env = RecordVideo(env, config["video_dir"], name_prefix=f"mario_{run_hash}_", episode_trigger=lambda x: x == 500)
 
 # configure some hyperparameters
 # define action/state space dimensions
