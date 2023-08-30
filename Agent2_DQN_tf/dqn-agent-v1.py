@@ -246,7 +246,7 @@ class MarioAgent:
         self.optimizer = Adam(learning_rate=config["learning_rate"], epsilon=0.01, clipnorm=1)
         self.loss_function = "Huber"
         self.kl_func = tf.keras.losses.KLDivergence()
-        self.bin_xentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        self.bin_xentropy = tf.keras.losses.BinaryCrossentropy(from_logits=False)
         self.acc = 0
         self.loss = 0
         self.kl_val = 0
