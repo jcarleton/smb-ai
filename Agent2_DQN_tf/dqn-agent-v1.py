@@ -245,8 +245,12 @@ class MarioAgent:
         self.action_space = action_size
         self.optimizer = Adam(learning_rate=config["learning_rate"], epsilon=0.01, clipnorm=1)
         self.loss_function = "Huber"
+        self.kl_func = tf.keras.losses.KLDivergence()
+        self.bin_xentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         self.acc = 0
         self.loss = 0
+        self.kl_val = 0
+        self.bin_xentropy_val = 0
         self.initializer = tf.keras.initializers.HeNormal(seed=config["seed"])
         self.memory = deque(maxlen=config["replay_memory"])
         self.gamma = config["gamma"]
@@ -343,6 +347,8 @@ class MarioAgent:
             # todo - add metric capture here?
             self.main_model.fit(state, target, epochs=1, use_multiprocessing=True, verbose=1)
             self.loss, self.acc = self.main_model.evaluate(state, target, verbose=2)
+            self.kl_val = self.kl_func(state, target).numpy()
+            self.bin_xentropy_val = self.bin_xentropy(state, target).numpy()
 
     # did he die tho?
     # check if agent fell down a hole
@@ -362,7 +368,8 @@ class MarioAgent:
     # metrics logging function
     # example code was seen in CM3020 week 4, 4111_code_pack (keras_io_dqn_save_weights_v1.py)
     # todo - add more metrics
-    def log(self, mer, mel, rew, len, episode, epsilon, loss, accuracy, flag, score, coins, max_rew, high_score, tensorboard_log=True):
+    def log(self, mer, mel, rew, len, episode, epsilon, loss, accuracy, kl_val, bin_xel,
+            flag, score, coins, max_rew, high_score, tensorboard_log=True):
         """
         log MER, MEL, episode rewards, episode length, epsilon, loss, accuracy, goal, in game score, coins
         """
@@ -375,6 +382,8 @@ class MarioAgent:
                 tf.summary.scalar("epsilon", epsilon, step=episode)
                 tf.summary.scalar("loss", loss, step=episode)
                 tf.summary.scalar("accuracy", accuracy, step=episode)
+                tf.summary.scalar("approx kl", kl_val, step=episode)
+                tf.summary.scalar("binary cross entropy", bin_xel, step=episode)
                 tf.summary.scalar("goal", flag, step=episode)
                 tf.summary.scalar("score", score, step=episode)
                 tf.summary.scalar("coins", coins, step=episode)
@@ -444,7 +453,7 @@ env = CustomReward(env)
 env = EpisodicLifeEnv(env)
 env = MaxAndSkipEnv(env, 4)
 env = ProcessFrame84(env)
-env = RecordVideo(env, config["video_dir"], name_prefix=f"mario_{run_hash}_", episode_trigger=lambda x: x == 500)
+env = RecordVideo(env, config["video_dir"], name_prefix=f"mario_{run_hash}_", episode_trigger=lambda x: x % 250 == 0)
 
 # configure some hyperparameters
 # define action/state space dimensions
@@ -577,8 +586,11 @@ while True:
                 max_rew = ep_rew
             if info['score'] > high_score:
                 high_score = info['score']
-            dqn_agent.log(mer, mel, ep_rew, ts_done, episode+1, dqn_agent.epsilon, dqn_agent.loss, dqn_agent.acc,
-                          flags_got, info['score'], info['coins'], max_rew, high_score, tensorboard_log=True)
+            dqn_agent.log(mer, mel, ep_rew, ts_done, episode+1,
+                          dqn_agent.epsilon, dqn_agent.loss, dqn_agent.acc,
+                          dqn_agent.kl_val, dqn_agent.bin_xentropy_val, flags_got,
+                          info['score'], info['coins'], max_rew, high_score,
+                          tensorboard_log=True)
 
             if len(dqn_agent.memory) > batch_size and ts_done >= 10:
                 # print out stats for the run and cumulative stats
@@ -626,3 +638,4 @@ while True:
         break
 
 env.close()
+wandb.finish()
