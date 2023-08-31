@@ -34,16 +34,16 @@ config = {
 
 # initialize wandb with project name, config, and requirements for metrics
 wandb_run = wandb.init(
-    project="smb-ai",
+    project="smb-ai-ppo",
     config=config,
     sync_tensorboard=True,
     monitor_gym=True,
     save_code=True
 )
 
-artifact = wandb.Artifact(name='source', type='code')
-artifact.add_file('./train-agent.py', name='train-agent.py')
-artifact.add_file('./smbcustomnn001.py', name='smbcustomnn001.py')
+# artifact = wandb.Artifact(name='source', type='code')
+# artifact.add_file('./train-agent.py', name='train-agent.py')
+# artifact.add_file('./smbcustomnn001.py', name='smbcustomnn001.py')
 
 
 # define training checkpoint dir
@@ -132,8 +132,8 @@ class SummaryWriterCallback(BaseCallback):
                 self.ep_rew += self.locals['rewards'][0]
 
             if self.ep_done:
-                self.ep_rew += self.locals['rewards'][0]
-                self.high_score_counter += self.locals['infos'][0]['score']
+                self.ep_rew = self.locals['rewards'][0]
+                self.high_score_counter = self.locals['infos'][0]['score']
 
                 if self.ep_rew > self.ep_rew_max:
                     self.ep_rew_max = self.ep_rew
