@@ -132,7 +132,7 @@ class SummaryWriterCallback(BaseCallback):
                 self.ep_rew += self.locals['rewards'][0]
 
             if self.ep_done:
-                self.ep_rew = self.locals['rewards'][0]
+                self.ep_rew += self.locals['rewards'][0]
                 self.high_score_counter = self.locals['infos'][0]['score']
 
                 if self.ep_rew > self.ep_rew_max:
@@ -144,6 +144,8 @@ class SummaryWriterCallback(BaseCallback):
                     self.high_score = self.high_score_counter
                     self.tb_formatter.writer.add_scalar("game/high score", self.high_score, self.n_calls)
                     self.high_score_counter = 0
+
+                self.ep_rew = 0
 
 
 # set up the environment
