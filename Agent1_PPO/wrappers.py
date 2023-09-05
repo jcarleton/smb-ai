@@ -26,11 +26,9 @@ class CustomReward(gym.RewardWrapper):
             # get coins
             elif info['coins'] > 0:
                 reward += info['coins'] * 100.0
-                # reward += info['coins'] * 500.0
             # increase score
             elif info['score'] > 0:
                 reward += info['score']
-                # reward += info['score'] * 10.0
             # get mushroom
             elif info['status'] == 'tall':
                 reward += 100.0
@@ -39,7 +37,6 @@ class CustomReward(gym.RewardWrapper):
                 reward += 200.0
             # move further right on screen
             elif info['x_pos'] > 0:
-                # reward += info['x_pos'] * 2.5
                 reward += info['x_pos']
             # penalties
             # loss of life
