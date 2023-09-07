@@ -18,8 +18,7 @@ class CustomNetwork(nn.Module):
         self.latent_dim_pi = last_layer_dim_pi
         self.latent_dim_vf = last_layer_dim_vf
 
-        # using SELU to prevent dead neurons
-        # testing 6 hidden layer depth
+        # using SELU to prevent dead neurons, vanishing gradient
         # policy network
         self.policy_net = nn.Sequential(
             nn.Linear(feature_dim, last_layer_dim_pi),
