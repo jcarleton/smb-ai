@@ -7,4 +7,5 @@ Two AI agent implementations:
  - Agent 2: DDQN
 
 Agent 1 is written using the StableBaselines3 library
+
 Agent 2 is written using Tensorflow and Keras
