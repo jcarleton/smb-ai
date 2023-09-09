@@ -3,3 +3,4 @@ gym-notices==0.0.8
 gym-super-mario-bros==7.4.0
 nes-py==8.2.1
 tqdm==4.65.0
+wandb==0.13.5
