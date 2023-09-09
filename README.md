@@ -2,6 +2,9 @@
 
 Super Mario Bros AI for CM3070
 
-In development:
- - Agent 1: PPO Based
- - Agent 2: DQN Based
+Two AI agent implementations:
+ - Agent 1: PPO
+ - Agent 2: DDQN
+
+Agent 1 is written using the StableBaselines3 library
+Agent 2 is written using Tensorflow and Keras
