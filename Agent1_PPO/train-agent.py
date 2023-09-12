@@ -20,7 +20,7 @@ from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, Callb
 from smbcustomnn001 import CustomNetwork, CustomActorCriticPolicy
 from stable_baselines3.common.evaluation import evaluate_policy
 from wandb.integration.sb3 import WandbCallback
-from wrappers import EpisodicLifeEnv, CustomReward, MaxAndSkipEnv, ProcessFrameResGS
+from wrappers import EpisodicLifeEnv, CustomReward, MaxAndSkipEnv, ProcessFrame84
 from stable_baselines3.common.logger import TensorBoardOutputFormat
 
 
@@ -41,6 +41,7 @@ wandb_run = wandb.init(
     save_code=True
 )
 
+# comment in to collect these additional artifacts
 # artifact = wandb.Artifact(name='source', type='code')
 # artifact.add_file('./train-agent.py', name='train-agent.py')
 # artifact.add_file('./smbcustomnn001.py', name='smbcustomnn001.py')
@@ -76,10 +77,11 @@ class trainingCallback(BaseCallback):
                         'model_checkpoint_{}'.format(self.n_calls))
             # save it!
             self.model.save(model_path)
-            wandb.save(model_path)
+            # wandb.save(model_path)
         return True
 
-
+# callback to gather in-game stats and per-episode stats
+# not natively collected since this is using a custom env
 class SummaryWriterCallback(BaseCallback):
     '''
     Snippet skeleton from Stable baselines3 documentation here:
@@ -156,7 +158,7 @@ env = CustomReward(env)
 env = EpisodicLifeEnv(env)
 # set up the action space
 env = JoypadSpace(env, SIMPLE_MOVEMENT)
-env = ProcessFrameResGS(env)
+env = ProcessFrame84(env)
 env = MaxAndSkipEnv(env, skip=4)
 # skip frames, return the max of last 2 frames
 # env = MaxAndSkipEnv(env, skip=4)
@@ -213,7 +215,7 @@ PPO_path = os.path.join('Training',
         f"PPO_SuperMario_1M/{wandb_run.id}"
         )
 
-
+# save the final model
 model.save(PPO_path)
 
 # evaluate the model
