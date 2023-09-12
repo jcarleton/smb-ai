@@ -125,33 +125,6 @@ class MaxAndSkipEnv(gym.Wrapper):
         self._obs_buffer.append(obs)
         return obs
 
-#
-# class ProcessFrameResGS(gym.ObservationWrapper):
-#     """
-#     Scale the observation space to 84x84
-#     Convert from RGB to Grayscale
-#     Checks if input is NES resolution
-#     """
-#     def __init__(self, env=None):
-#         super(ProcessFrameResGS, self).__init__(env)
-#         self.observation_space = gym.spaces.Box(low=0, high=255, shape=(84, 84, 1), dtype=np.uint8)
-#
-#     def observation(self, obs):
-#         return ProcessFrameResGS.process(obs)
-#
-#     @staticmethod
-#     def process(frame):
-#         if frame.size == 240 * 256 * 3:
-#             img = np.reshape(frame, [240, 256, 3]).astype(np.float32)
-#         else:
-#             assert False, "Input is not native NES resolution!"
-#         img = img[:, :, 0] * 0.300 + img[:, :, 1] * 0.575 + img[:, :, 2] * 0.120
-#         resized_screen = cv2.resize(img, (84, 110), interpolation=cv2.INTER_AREA)
-#         x_t = resized_screen[18:102, :]
-#         x_t = np.reshape(x_t, [84, 84, 1])
-#         return x_t.astype(np.uint8)
-
-
 # resize observation space (screen) to 84 x 84 and convert RGB to grayscale
 # https://github.com/openai/large-scale-curiosity/blob/e0a698676d19307a095cd4ac1991c4e4e70e56fb/wrappers.py#L53
 class ProcessFrame84(gym.ObservationWrapper):
