@@ -237,7 +237,6 @@ class ProcessFrame84(gym.ObservationWrapper):
 
 
 # DQN Agent
-# todo - complete logging functionality, collect in wandb
 class MarioAgent:
     def __init__(self, state_size, action_size):
         # agent variables
@@ -311,6 +310,8 @@ class MarioAgent:
         self.memory.append((state, action, reward, next_state, done))
 
     # choose an action
+    # if random is less or eq to epsilon, random action
+    # otherwise predict best
     def act(self, state):
         random_number = np.random.rand()
         if random_number <= self.epsilon:
@@ -320,12 +321,10 @@ class MarioAgent:
         return q_max
 
     # update epsilon
-    # todo - capture epsilon in metrics
     def update_epsilon(self, mode, episode):
         if mode == "linear":
             if self.epsilon >= self.epsilon_min:
                 self.epsilon -= self.epsilon_decay_linear
-                # self.epsilon *= self.epsilon_decay_linear
         if mode == "greedy":
             self.epsilon = self.epsilon_min + (self.epsilon - self.epsilon_min) * np.exp(-self.epsilon_decay_greedy * episode)
 
@@ -339,14 +338,16 @@ class MarioAgent:
                 target[0][action] = reward + self.gamma * np.amax(self.target_model.predict(next_state))
                 # target[0][action] = reward + (1 - done) * self.gamma * np.amax(self.target_model.predict(next_state))
             target[0][action] = reward
-            # todo - add metric capture here?
+            # train the network
             self.main_model.fit(state, target, epochs=1, use_multiprocessing=True, verbose=1)
+            # capture some metrics, loss, accuracy, kl divergence, binary cross entropy
             self.loss, self.acc = self.main_model.evaluate(state, target, verbose=2)
             self.kl_val = self.kl_func(state, target).numpy()
             self.bin_xentropy_val = self.bin_xentropy(state, target).numpy()
 
     # did he die tho?
     # check if agent fell down a hole
+    # todo - test penalties for this to make agent learn to not die by pits
     def agent_pitfall(self):
         y_pos = self.get_agent_y_pos()
         # true ground is 79
@@ -387,13 +388,6 @@ class MarioAgent:
         # todo - different file writer for metrics... csv?
         # else:
         # with open...
-
-    # # create a random string of 8 alpha-num characters
-    # # guidance on this from https://pynative.com/python-generate-random-string/
-    # def hash_gen(self):
-    #     hash = ''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(8))
-    #     # print(hash)
-    #     return hash
 
     # todo - add model loader and replay - probably another module or refactor to allow for modality
     # load a model
@@ -544,6 +538,7 @@ while True:
             flags_got += 1
             print(f"episode {episode} got flag!!!")
 
+        # broken episode
         if done and ep_rew == 0.0 and ts_done <= 10:
             print(f"1 something weird going on with this episode, got {ts_done} timesteps, {np.sum(ep_rew)} rewards?! Discarding...")
             env.reset()
@@ -618,13 +613,15 @@ while True:
                     dqn_agent.save("dqn-mario", "main")
                     dqn_agent.save("dqn-mario", "target")
 
+                # update model weights
                 if episode % 100 == 0:
                     if not episode == 0:
                         print(f"soft update...")
                         dqn_agent.soft_update_target_model()
 
-
+            # update epsilon
             dqn_agent.update_epsilon("linear", episode)
+            # next episode
             episode += 1
 
     # a way out of the infinite loop
@@ -632,5 +629,6 @@ while True:
         print(f"Training run complete! Done {num_episodes} episodes of {num_timesteps} steps!")
         break
 
+# end session, tidy up
 env.close()
 wandb.finish()
